@@ -67,19 +67,19 @@ df <-
            log(comprehension0 / (1 - comprehension0)) + 
            as.integer(framing == "A") *  0.0 + 
            as.integer(framing == "B") *  0.5 + 
-           as.integer(framing == "C") *  0.7 + 
+           as.integer(framing == "C") *  0.67 + 
            as.integer(message == "X") *  0.0 + 
            as.integer(message == "Y") *  0.6 + 
            as.integer(message == "Z") *  0.75) %>% 
   mutate(comprehension = rbinom(nrow(.), 1, exp(eta1) / (1 + exp(eta1)))) %>% 
   mutate(eta2 = 
            influence0 + 
-           as.integer(framing == "A") *  0.0  + 
-           as.integer(framing == "B") * -0.25 + 
-           as.integer(framing == "C") *  0.25 + 
-           as.integer(message == "X") *  0.0  + 
-           as.integer(message == "Y") * -0.25 + 
-           as.integer(message == "Z") *  0.25) %>% 
+           as.integer(framing == "A") * 0.0 + 
+           as.integer(framing == "B") * 0.1 + 
+           as.integer(framing == "C") * 0.3 + 
+           as.integer(message == "X") * 0.0 + 
+           as.integer(message == "Y") * 0.2 + 
+           as.integer(message == "Z") * 0.4) %>% 
   mutate(influence = rnorm(nrow(.), eta2, sd = sd0))
 dfSum <- 
   df %>% 
