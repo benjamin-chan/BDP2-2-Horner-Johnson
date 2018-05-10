@@ -1,0 +1,7 @@
+setwd("C:/Users/chanb/Box Sync/Share/BDP2-2 Horner-Johnson/scripts")
+library(checkpoint)
+library(knitr)
+library(rmarkdown)
+checkpoint("2018-04-01", use.knitr = TRUE)
+knit("simulatePower.Rmd", output = "../docs/sumulatePower.md")
+pandoc("../docs/sumulatePower.md", format = "docx")
