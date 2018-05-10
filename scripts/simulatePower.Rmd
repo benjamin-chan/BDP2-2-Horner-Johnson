@@ -1,0 +1,171 @@
+---
+title: "Power simulations"
+author: "Benjamin Chan"
+date: `r Sys.Date()`
+output: html_document
+---
+
+```{r setup, include=FALSE}
+setwd("C:/Users/chanb/Box Sync/Share/BDP2-2 Horner-Johnson/scripts")
+library(checkpoint)
+library(knitr)
+library(rmarkdown)
+checkpoint("2018-04-01", use.knitr = TRUE)
+knitr::opts_chunk$set(echo = FALSE, 
+                      message = FALSE, 
+                      fig.path = "../figures/", 
+                      dpi = 300)
+library(magrittr)
+library(dplyr)
+library(broom)
+library(parallel)
+library(doParallel)
+library(ggplot2)
+theme_set(theme_bw())
+theme_update(plot.title = element_text(hjust = 0.5))
+Sys.time0 <- Sys.time()
+```
+
+## Generate data
+
+```{r}
+N <- 600
+S <- 100
+```
+
+Study design is a two-factor, full factorial randomization.
+The factors are **framing** and the **message** of the intervention.
+Each factor has **3** levels.
+
+Full sample size is **`r sprintf("N = %d", N)`**.
+
+Number of simulations is **`r sprintf("S = %d", S)`**.
+
+The outcomes are **comprehension** and **influence**.
+
+```{r}
+comprehension0 <- 0.5
+influence0 <- 0
+sd0 <- 1
+```
+
+Comprehension is a dichotomous outcome.
+Baseline comprehension is assumed to be **`r sprintf("%.00f%%", comprehension0 * 100)`**.
+
+Influence is a continuous outcome.
+It represents pre-post change on a scale.
+For analytic purposes, it will be scaled on a (-1, +1) continuum.
+Baseline influence is assumed to be **`r sprintf("%.02f", influence0)`**.
+
+```{r generateData}
+df <- 
+  expand.grid(framing = c("A", "B", "C"),
+              message = c("X", "Y", "Z"),
+              id = seq(round(N / 9)),
+              sample = seq(S)) %>% 
+  mutate(eta1 = 
+           log(comprehension0 / (1 - comprehension0)) + 
+           as.integer(framing == "A") *  0.0 + 
+           as.integer(framing == "B") *  0.5 + 
+           as.integer(framing == "C") *  0.7 + 
+           as.integer(message == "X") *  0.0 + 
+           as.integer(message == "Y") *  0.6 + 
+           as.integer(message == "Z") *  0.75) %>% 
+  mutate(comprehension = rbinom(nrow(.), 1, exp(eta1) / (1 + exp(eta1)))) %>% 
+  mutate(eta2 = 
+           influence0 + 
+           as.integer(framing == "A") *  0.0  + 
+           as.integer(framing == "B") * -0.25 + 
+           as.integer(framing == "C") *  0.25 + 
+           as.integer(message == "X") *  0.0  + 
+           as.integer(message == "Y") * -0.25 + 
+           as.integer(message == "Z") *  0.25) %>% 
+  mutate(influence = rnorm(nrow(.), eta2, sd = sd0))
+dfSum <- 
+  df %>% 
+  group_by(framing, message, sample) %>% 
+  summarize(n = n(),
+            eta1 = mean(eta1),
+            y1 = sum(comprehension),
+            p1 = sum(comprehension) / n(),
+            eta2 = mean(eta2),
+            y2 = mean(influence),
+            s2 = sd(influence))
+dfSum %>% 
+  group_by(framing, message) %>% 
+  summarize(n = n(),
+            meanComprehension = mean(p1),
+            nominalOddsRatio = exp(mean(eta1)),
+            meanInfluence = mean(y2),
+            meanSD = mean(s2),
+            nominalEffectSize = mean(eta2)) %>% 
+  kable(digits = 3)
+dfSum %>% 
+  ggplot(aes(x = p1)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Comprehension") +
+  facet_grid(message ~ framing)
+dfSum %>% 
+  ggplot(aes(x = y2)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Mean influence") +
+  facet_grid(message ~ framing)
+dfSum %>% 
+  ggplot(aes(x = s2)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("SD influence") +
+  facet_grid(message ~ framing)
+```
+
+## Aim 1: Comprehension
+
+```{r comprehension}
+cores <- min(4, detectCores() - 1)
+cl <- makeCluster(cores)
+registerDoParallel(cl)
+simBetas <- foreach (i = seq(S), .combine = rbind) %dopar% {
+  require(magrittr)
+  require(dplyr)
+  require(broom)
+  df %>% 
+    filter(sample == i) %>% 
+    glm(comprehension ~ framing + message, data = ., family = "binomial") %>% 
+    tidy() %>% 
+    mutate(sim = i)
+}
+stopCluster(cl)
+power <- 
+  simBetas %>% 
+  filter(term != "(Intercept)") %>% 
+  mutate(sig = p.value < 0.05)
+power %>% 
+  group_by(term) %>% 
+  summarize(n = n(),
+            truePos = sum(sig)) %>% 
+  mutate(power = truePos / n) %>% 
+  kable()
+power %>% 
+  ggplot(aes(x = estimate, fill = sig)) +
+  geom_histogram(alpha = 1/2) +
+  scale_fill_discrete("", labels = c("False Neg", "True Pos")) +
+  facet_wrap(~ term)
+```
+
+
+## Aim 2: Influence
+
+```{r}
+df %>% 
+  filter(sample == 1) %>% 
+  lm(influence ~ framing + message, data = .) %>% 
+  summary()
+```
+
+
+## Session summary
+
+```{r}
+list(completionDateTime = Sys.time(),
+     executionTime = Sys.time() - Sys.time0,
+     sessionInfo = sessionInfo())
+```
