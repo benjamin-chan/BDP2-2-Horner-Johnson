@@ -157,10 +157,35 @@ power %>%
 ## Aim 2: Influence
 
 ```{r}
+cores <- min(4, detectCores() - 1)
+cl <- makeCluster(cores)
+registerDoParallel(cl)
+simBetas <- foreach (i = seq(S), .combine = rbind) %dopar% {
+  require(magrittr)
+  require(dplyr)
+  require(broom)
 df %>% 
-  filter(sample == 1) %>% 
+    filter(sample == i) %>% 
   lm(influence ~ framing + message, data = .) %>% 
-  summary()
+    tidy() %>% 
+    mutate(sim = i)
+}
+stopCluster(cl)
+power <- 
+  simBetas %>% 
+  filter(term != "(Intercept)") %>% 
+  mutate(sig = p.value < 0.05)
+power %>% 
+  group_by(term) %>% 
+  summarize(n = n(),
+            truePos = sum(sig)) %>% 
+  mutate(power = truePos / n) %>% 
+  kable()
+power %>% 
+  ggplot(aes(x = estimate, fill = sig)) +
+  geom_histogram(alpha = 1/2) +
+  scale_fill_discrete("", labels = c("False Neg", "True Pos")) +
+  facet_wrap(~ term)
 ```
 
 
