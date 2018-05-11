@@ -30,7 +30,7 @@ Sys.time0 <- Sys.time()
 
 ```{r}
 N <- 600
-S <- 100
+S <- 1000
 ```
 
 Study design is a two-factor, full factorial randomization.
@@ -46,7 +46,7 @@ The outcomes are **comprehension** and **influence**.
 ```{r}
 comprehension0 <- 0.5
 influence0 <- 0
-sd0 <- 1
+sd0 <- 1.0
 ```
 
 Comprehension is a dichotomous outcome.
@@ -65,21 +65,21 @@ df <-
               sample = seq(S)) %>% 
   mutate(eta1 = 
            log(comprehension0 / (1 - comprehension0)) + 
-           as.integer(framing == "A") *  0.0 + 
-           as.integer(framing == "B") *  0.5 + 
-           as.integer(framing == "C") *  0.67 + 
-           as.integer(message == "X") *  0.0 + 
-           as.integer(message == "Y") *  0.6 + 
-           as.integer(message == "Z") *  0.75) %>% 
+           as.integer(framing == "A") *  0.0  + 
+           as.integer(framing == "B") *  0.55 + 
+           as.integer(framing == "C") *  0.65 + 
+           as.integer(message == "X") *  0.0  + 
+           as.integer(message == "Y") *  0.60 + 
+           as.integer(message == "Z") *  0.70) %>% 
   mutate(comprehension = rbinom(nrow(.), 1, exp(eta1) / (1 + exp(eta1)))) %>% 
   mutate(eta2 = 
            influence0 + 
            as.integer(framing == "A") * 0.0 + 
-           as.integer(framing == "B") * 0.1 + 
-           as.integer(framing == "C") * 0.3 + 
+           as.integer(framing == "B") * 0.24 + 
+           as.integer(framing == "C") * 0.32+ 
            as.integer(message == "X") * 0.0 + 
-           as.integer(message == "Y") * 0.2 + 
-           as.integer(message == "Z") * 0.4) %>% 
+           as.integer(message == "Y") * 0.28 + 
+           as.integer(message == "Z") * 0.36) %>% 
   mutate(influence = rnorm(nrow(.), eta2, sd = sd0))
 dfSum <- 
   df %>% 
@@ -166,9 +166,9 @@ simBetas <- foreach (i = seq(S), .combine = rbind) %dopar% {
   require(magrittr)
   require(dplyr)
   require(broom)
-df %>% 
+  df %>% 
     filter(sample == i) %>% 
-  lm(influence ~ framing + message, data = .) %>% 
+    lm(influence ~ framing + message, data = .) %>% 
     tidy() %>% 
     mutate(sim = i)
 }
