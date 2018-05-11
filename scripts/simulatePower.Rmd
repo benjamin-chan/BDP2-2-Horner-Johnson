@@ -32,6 +32,7 @@ Sys.time0 <- Sys.time()
 ```{r}
 N <- 600
 S <- 1000
+set.seed(as.integer(as.Date("2018-05-11")))
 ```
 
 Study design is a two-factor, full factorial randomization.
@@ -76,11 +77,11 @@ df <-
   mutate(eta2 = 
            influence0 + 
            as.integer(framing == "A") * 0.0 + 
-           as.integer(framing == "B") * 0.24 + 
-           as.integer(framing == "C") * 0.32+ 
+           as.integer(framing == "B") * 0.50 + 
+           as.integer(framing == "C") * 0.58 + 
            as.integer(message == "X") * 0.0 + 
-           as.integer(message == "Y") * 0.28 + 
-           as.integer(message == "Z") * 0.36) %>% 
+           as.integer(message == "Y") * 0.54 + 
+           as.integer(message == "Z") * 0.62) %>% 
   mutate(influence = rtruncnorm(nrow(.), a = -1, b = +1, mean = eta2, sd = sd0))
 df %>%
   mutate(comprehension = as.logical(comprehension)) %>% 
