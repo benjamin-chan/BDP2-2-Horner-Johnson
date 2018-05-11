@@ -158,9 +158,10 @@ power <-
   mutate(sig = p.value < 0.05)
 power %>% 
   group_by(term) %>% 
-  summarize(n = n(),
+  summarize(samples = n(),
             truePos = sum(sig)) %>% 
-  mutate(power = truePos / n) %>% 
+  mutate(power = truePos / samples) %>% 
+  mutate(sampleSize = N) %>% 
   kable()
 power %>% 
   ggplot(aes(x = estimate, fill = sig)) +
@@ -193,9 +194,9 @@ power <-
   mutate(sig = p.value < 0.05)
 power %>% 
   group_by(term) %>% 
-  summarize(n = n(),
+  summarize(samples = n(),
             truePos = sum(sig)) %>% 
-  mutate(power = truePos / n) %>% 
+  mutate(power = truePos / samples) %>% 
   kable()
 power %>% 
   ggplot(aes(x = estimate, fill = sig)) +
