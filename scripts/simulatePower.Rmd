@@ -81,6 +81,17 @@ df <-
            as.integer(message == "Y") * 0.28 + 
            as.integer(message == "Z") * 0.36) %>% 
   mutate(influence = rnorm(nrow(.), eta2, sd = sd0))
+df %>%
+  mutate(comprehension = as.logical(comprehension)) %>% 
+  ggplot(aes(x = comprehension)) +
+  geom_bar(color = "black", fill = "grey", alpha = 1/2) +
+  scale_x_discrete("Comprehension, binomial random variable") +
+  facet_grid(message ~ framing)
+df %>%
+  ggplot(aes(x = influence)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Influence, truncated normal random variable") +
+  facet_grid(message ~ framing)
 dfSum <- 
   df %>% 
   group_by(framing, message, sample) %>% 
