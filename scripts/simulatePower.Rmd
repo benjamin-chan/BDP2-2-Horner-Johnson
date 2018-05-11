@@ -90,7 +90,8 @@ dfSum <-
             p1 = sum(comprehension) / n(),
             eta2 = mean(eta2),
             y2 = mean(influence),
-            s2 = sd(influence))
+            s2 = sd(influence),
+            cv2 = sd(influence) / mean(influence))
 dfSum %>% 
   group_by(framing, message) %>% 
   summarize(n = n(),
@@ -99,6 +100,7 @@ dfSum %>%
             nominalRelRisk = exp(mean(eta1)) / (1 - comprehension0 + (comprehension0 * exp(mean(eta1)))),
             meanInfluence = mean(y2),
             meanSD = mean(s2),
+            meanCV = mean(cv2),
             nominalEffectSize = mean(eta2)) %>% 
   select(-nominalOddsRatio) %>% 
   kable(digits = 3)
