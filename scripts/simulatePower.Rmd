@@ -21,6 +21,7 @@ library(broom)
 library(parallel)
 library(doParallel)
 library(ggplot2)
+library(truncnorm)
 theme_set(theme_bw())
 theme_update(plot.title = element_text(hjust = 0.5))
 Sys.time0 <- Sys.time()
@@ -81,6 +82,7 @@ df <-
            as.integer(message == "Y") * 0.28 + 
            as.integer(message == "Z") * 0.36) %>% 
   mutate(influence = rnorm(nrow(.), eta2, sd = sd0))
+  mutate(influence = rtruncnorm(nrow(.), a = -1, b = +1, mean = eta2, sd = sd0))
 df %>%
   mutate(comprehension = as.logical(comprehension)) %>% 
   ggplot(aes(x = comprehension)) +
