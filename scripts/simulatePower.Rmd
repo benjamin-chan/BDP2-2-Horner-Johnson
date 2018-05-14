@@ -30,7 +30,7 @@ Sys.time0 <- Sys.time()
 ## Generate data
 
 ```{r}
-N <- 600
+N <- 500
 S <- 1000
 set.seed(as.integer(as.Date("2018-05-11")))
 ```
