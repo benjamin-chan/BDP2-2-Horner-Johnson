@@ -173,7 +173,7 @@ df <-
   mutate(comprehension = rbinom(nrow(.), 1, exp(eta) / (1 + exp(eta)))) %>% 
   arrange(sim, subject, order) %>% 
   select(sim, subject, order, graphic, scenario, comprehension)
-rm(comprehension0, first, second, order, scenario)
+rm(comprehension0, order, scenario)
 df %>% 
   filter(order == 1) %>% 
   group_by(order, graphic, scenario) %>% 
