@@ -27,17 +27,13 @@ theme_update(plot.title = element_text(hjust = 0.5))
 Sys.time0 <- Sys.time()
 ```
 
-## Generate data
+## Simulation parameters
 
 ```{r}
 N <- 500
-S <- 1000
+S <- 5000
 set.seed(as.integer(as.Date("2018-05-11")))
 ```
-
-Study design is a two-factor, full factorial randomization.
-The factors are **framing** and the **message** of the intervention.
-Each factor has **3** levels.
 
 Full sample size is **`r sprintf("N = %d", N)`**.
 
@@ -45,95 +41,6 @@ Number of simulations is **`r sprintf("S = %d", S)`**.
 
 The outcomes are **comprehension** and **influence**.
 
-```{r}
-comprehension0 <- 0.5
-influence0 <- 0
-sd0 <- 1.0
-```
-
-Comprehension is a dichotomous outcome.
-Baseline comprehension is assumed to be **`r sprintf("%.00f%%", comprehension0 * 100)`**.
-
-Influence is a continuous outcome.
-It represents pre-post change on a scale.
-For analytic purposes, it will be scaled on a (-1, +1) continuum.
-Baseline influence is assumed to be **`r sprintf("%.02f", influence0)`**.
-
-```{r generateData}
-df <- 
-  expand.grid(framing = c("A", "B", "C"),
-              message = c("X", "Y", "Z"),
-              id = seq(round(N / 9)),
-              sample = seq(S)) %>% 
-  mutate(eta1 = 
-           log(comprehension0 / (1 - comprehension0)) + 
-           as.integer(framing == "A") *  0.0  + 
-           as.integer(framing == "B") *  0.55 + 
-           as.integer(framing == "C") *  0.65 + 
-           as.integer(message == "X") *  0.0  + 
-           as.integer(message == "Y") *  0.60 + 
-           as.integer(message == "Z") *  0.70) %>% 
-  mutate(comprehension = rbinom(nrow(.), 1, exp(eta1) / (1 + exp(eta1)))) %>% 
-  mutate(eta2 = 
-           influence0 + 
-           as.integer(framing == "A") * 0.0 + 
-           as.integer(framing == "B") * 0.50 + 
-           as.integer(framing == "C") * 0.58 + 
-           as.integer(message == "X") * 0.0 + 
-           as.integer(message == "Y") * 0.54 + 
-           as.integer(message == "Z") * 0.62) %>% 
-  mutate(influence = rtruncnorm(nrow(.), a = -1, b = +1, mean = eta2, sd = sd0))
-df %>%
-  mutate(comprehension = as.logical(comprehension)) %>% 
-  ggplot(aes(x = comprehension)) +
-  geom_bar(color = "black", fill = "grey", alpha = 1/2) +
-  scale_x_discrete("Comprehension, binomial random variable") +
-  facet_grid(message ~ framing)
-df %>%
-  ggplot(aes(x = influence)) +
-  geom_density(fill = "grey", alpha = 1/2) +
-  scale_x_continuous("Influence, truncated normal random variable") +
-  facet_grid(message ~ framing)
-dfSum <- 
-  df %>% 
-  group_by(framing, message, sample) %>% 
-  summarize(n = n(),
-            eta1 = mean(eta1),
-            y1 = sum(comprehension),
-            p1 = sum(comprehension) / n(),
-            eta2 = mean(eta2),
-            y2 = mean(influence),
-            s2 = sd(influence),
-            cv2 = sd(influence) / mean(influence))
-dfSum %>% 
-  group_by(framing, message) %>% 
-  summarize(n = n(),
-            meanComprehension = mean(p1),
-            nominalOddsRatio = exp(mean(eta1)),
-            nominalRiskRatio = exp(mean(eta1)) / (1 - comprehension0 + (comprehension0 * exp(mean(eta1)))),
-            nominalRiskDiff = mean(p1) - mean(p1) / (exp(mean(eta1)) / (1 - comprehension0 + (comprehension0 * exp(mean(eta1))))),
-            meanInfluence = mean(y2),
-            meanSD = mean(s2),
-            meanCV = mean(cv2),
-            nominalEffectSize = mean(eta2)) %>% 
-  select(-nominalOddsRatio) %>% 
-  kable(digits = 3)
-dfSum %>% 
-  ggplot(aes(x = p1)) +
-  geom_density(fill = "grey", alpha = 1/2) +
-  scale_x_continuous("Comprehension") +
-  facet_grid(message ~ framing)
-dfSum %>% 
-  ggplot(aes(x = y2)) +
-  geom_density(fill = "grey", alpha = 1/2) +
-  scale_x_continuous("Mean influence") +
-  facet_grid(message ~ framing)
-dfSum %>% 
-  ggplot(aes(x = s2)) +
-  geom_density(fill = "grey", alpha = 1/2) +
-  scale_x_continuous("SD influence") +
-  facet_grid(message ~ framing)
-```
 
 ## Aim 1: Comprehension
 
@@ -221,36 +128,105 @@ tests %>%
 
 ## Aim 2: Influence
 
+```{r}
+influence0 <- 0
+sd0 <- 1.0
+effectSizeB <- 0.65
+effectSizeC <- 0.7
+effectSizeD <- 0.75
+alpha <- 0.05
+```
+
+Influence is a continuous outcome.
+For analytic purposes, it will be scaled on a (-1, +1) continuum.
+With video **A**, influence is assumed to be **`r sprintf("%.02f", influence0)`**.
+With video **B**, influence is assumed to be **`r sprintf("%.00f%%", influence0 + effectSizeB)`**.
+With video **C**, influence is assumed to be **`r sprintf("%.00f%%", influence0 + effectSizeC)`**.
+With video **D**, influence is assumed to be **`r sprintf("%.00f%%", influence0 + effectSizeD)`**.
+Standard deviation is assumed to be equal across video groups with value **`r sprintf("%.00f%%", sd0)`**
+
+Since the metric is bounded by -1 and +1, a truncated normal distribution is simulated.
+The simulated means will be different that the specified nominal means above.
+
 ```{r influence}
+video <-
+  replicate((N / 4) * S, sample(LETTERS[1:4], 4)) %>% 
+  as.vector()
+df <-
+  expand.grid(subject = seq(N),
+              sim = seq(S)) %>% 
+  bind_cols(data.frame(video)) %>% 
+  mutate(eta = 
+           influence0 + 
+           as.integer(video == "A") * 0.0 + 
+           as.integer(video == "B") * effectSizeB + 
+           as.integer(video == "C") * effectSizeC + 
+           as.integer(video == "D") * effectSizeD) %>% 
+  mutate(influence = rtruncnorm(nrow(.), a = -1, b = +1, mean = eta, sd = sd0)) %>% 
+  arrange(sim, subject, video) %>% 
+  select(sim, subject, video, eta, influence)
+rm(influence0, sd0, video)
+df %>%
+  ggplot(aes(x = influence)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Influence, truncated normal random variable") +
+  facet_wrap(~ video)
+dfSum <- 
+  df %>% 
+  group_by(sim, video) %>% 
+  summarize(n = n(),
+            eta = mean(eta),
+            y = mean(influence),
+            s = sd(influence),
+            cv = sd(influence) / mean(influence))
+dfSum %>% 
+  group_by(video) %>% 
+  summarize(n = n(),
+            meanInfluence = mean(y),
+            meanSD = mean(s),
+            meanCV = mean(cv),
+            nominalEffectSize = mean(eta)) %>% 
+  kable(digits = 3)
+dfSum %>% 
+  ggplot(aes(x = y)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Mean influence") +
+  facet_wrap(~ video)
+dfSum %>% 
+  ggplot(aes(x = s)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("SD influence") +
+  facet_wrap(~ video)
+
 cores <- min(4, detectCores() - 1)
 cl <- makeCluster(cores)
 registerDoParallel(cl)
-simBetas <- foreach (i = seq(S), .combine = rbind) %dopar% {
+tests <- foreach (i = seq(S), .combine = rbind) %dopar% {
   require(magrittr)
   require(dplyr)
   require(broom)
   df %>% 
-    filter(sample == i) %>% 
-    lm(influence ~ framing + message, data = .) %>% 
+    filter(sim == i) %>% 
+    lm(influence ~ video, data = .) %>% 
     tidy() %>% 
-    mutate(sim = i)
+    mutate(sim = i) %>% 
+    mutate(sig = p.value < 0.05)
 }
 stopCluster(cl)
-power <- 
-  simBetas %>% 
+tests %>% 
   filter(term != "(Intercept)") %>% 
-  mutate(sig = p.value < 0.05)
-power %>% 
   group_by(term) %>% 
   summarize(samples = n(),
             truePos = sum(sig)) %>% 
   mutate(power = truePos / samples) %>% 
   kable()
-power %>% 
+tests %>% 
+  filter(term != "(Intercept)") %>% 
   ggplot(aes(x = estimate, fill = sig)) +
   geom_histogram(alpha = 1/2) +
   scale_fill_discrete("", labels = c("False Neg", "True Pos")) +
-  facet_wrap(~ term)
+  facet_wrap(~ term, ncol = 1) +
+  theme(legend.position = "top")
 ```
 
 
