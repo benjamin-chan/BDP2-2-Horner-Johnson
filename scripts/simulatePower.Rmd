@@ -154,12 +154,10 @@ $H_0$ is there is no difference in the comprehension proportions between graphic
 
 ```{r comprehension}
 order <-
-  sample(c(1, 2), 2) %>% 
-  replicate(N * S, .) %>% 
+  replicate(N * S, sample(c(1, 2), 2)) %>% 
   as.vector()
 scenario <-
-  sample(c("a", "b"), 2) %>% 
-  replicate(N * S, .) %>% 
+  replicate(N * S, sample(c("a", "b"), 2)) %>% 
   as.vector()
 df <-
   expand.grid(sim = seq(S),
