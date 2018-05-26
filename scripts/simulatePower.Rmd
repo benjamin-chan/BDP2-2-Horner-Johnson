@@ -153,12 +153,14 @@ Assumed test is McNemar's chi-square for paired proportions.
 $H_0$ is there is no difference in the comprehension proportions between graphics A and B.
 
 ```{r comprehension}
-first <- sample(c(1, 2), N * S, replace = TRUE)
-second <- 3 - first
-order <- c(first, second)
-first <- sample(c(1, 2), N * S, replace = TRUE)
-second <- 3 - first
-scenario <- c(first, second)
+order <-
+  sample(c(1, 2), 2) %>% 
+  replicate(N * S, .) %>% 
+  as.vector()
+scenario <-
+  sample(c("a", "b"), 2) %>% 
+  replicate(N * S, .) %>% 
+  as.vector()
 df <-
   expand.grid(sim = seq(S),
               subject = seq(N),
@@ -212,6 +214,7 @@ tests %>%
   kable()
 tests %>% 
   ggplot(aes(x = chisq, fill = sig)) +
+  ggtitle(sprintf("%d simulations of sample size %d", S, N)) +
   geom_histogram(alpha = 1/2) +
   scale_x_continuous(tests %>% pull(method) %>% as.character() %>% unique()) +
   scale_fill_discrete("", labels = c("False Neg", "True Pos"))
