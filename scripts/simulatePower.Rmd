@@ -30,7 +30,7 @@ Sys.time0 <- Sys.time()
 ## Generate data
 
 ```{r}
-N <- 600
+N <- 500
 S <- 1000
 set.seed(as.integer(as.Date("2018-05-11")))
 ```
@@ -137,37 +137,84 @@ dfSum %>%
 
 ## Aim 1: Comprehension
 
+```{r}
+comprehension0 <- 0.5
+effectSize <- 0.37
+alpha <- 0.05
+```
+
+Comprehension is a dichotomous outcome.
+With graphic **A**, comprehension is assumed to be **`r sprintf("%.00f%%", comprehension0 * 100)`**.
+With graphic **B**, comprehension is assumed to be **`r sprintf("%.00f%%", (exp(effectSize) / (1 + exp(effectSize))) * 100)`**.
+
+All subjects will have comprehension assessed with graphics A and B.
+Order of presentation and message will be randomized.
+Assumed test is McNemar's chi-square for paired proportions.
+$H_0$ is there is no difference in the comprehension proportions between graphics A and B.
+
 ```{r comprehension}
+first <- sample(c(1, 2), N * S, replace = TRUE)
+second <- 3 - first
+order <- c(first, second)
+first <- sample(c(1, 2), N * S, replace = TRUE)
+second <- 3 - first
+scenario <- c(first, second)
+df <-
+  expand.grid(sim = seq(S),
+              subject = seq(N),
+              graphic = c("A", "B")) %>% 
+  bind_cols(data.frame(order)) %>% 
+  bind_cols(data.frame(scenario)) %>% 
+  mutate(scenario = factor(scenario, labels = c("a", "b"))) %>% 
+  mutate(eta = 
+           log(comprehension0 / (1 - comprehension0)) + 
+           as.integer(graphic == "A") * 0.0  + 
+           as.integer(graphic == "B") * effectSize) %>% 
+  mutate(comprehension = rbinom(nrow(.), 1, exp(eta) / (1 + exp(eta)))) %>% 
+  arrange(sim, subject, order) %>% 
+  select(sim, subject, order, graphic, scenario, comprehension)
+rm(comprehension0, first, second, order, scenario)
+df %>% 
+  filter(order == 1) %>% 
+  group_by(order, graphic, scenario) %>% 
+  summarize(n = n())
+df %>% 
+  group_by(graphic) %>% 
+  summarize(y = sum(comprehension),
+            n = n(),
+            p = sum(comprehension) / n())
+
 cores <- min(4, detectCores() - 1)
 cl <- makeCluster(cores)
 registerDoParallel(cl)
-simBetas <- foreach (i = seq(S), .combine = rbind) %dopar% {
+tests <- foreach (i = seq(S), .combine = rbind) %dopar% {
   require(magrittr)
+  require(tidyr)
   require(dplyr)
-  require(broom)
-  df %>% 
-    filter(sample == i) %>% 
-    glm(comprehension ~ framing + message, data = ., family = "binomial") %>% 
-    tidy() %>% 
-    mutate(sim = i)
+  dfi <-
+    df %>% 
+    filter(sim == i) %>% 
+    select(subject, graphic, comprehension) %>% 
+    spread(graphic, comprehension)
+  test <- mcnemar.test(dfi$A, dfi$B)
+  data.frame(method = test$method,
+             chisq = test$statistic,
+             df = test$parameter,
+             pvalue = test$p.value,
+             sig = test$p.value < alpha)
 }
 stopCluster(cl)
-power <- 
-  simBetas %>% 
-  filter(term != "(Intercept)") %>% 
-  mutate(sig = p.value < 0.05)
-power %>% 
-  group_by(term) %>% 
+tests %>% 
   summarize(samples = n(),
             truePos = sum(sig)) %>% 
   mutate(power = truePos / samples) %>% 
   mutate(sampleSize = N) %>% 
   kable()
-power %>% 
-  ggplot(aes(x = estimate, fill = sig)) +
+tests %>% 
+  ggplot(aes(x = chisq, fill = sig)) +
   geom_histogram(alpha = 1/2) +
-  scale_fill_discrete("", labels = c("False Neg", "True Pos")) +
-  facet_wrap(~ term)
+  scale_x_continuous(tests %>% pull(method) %>% as.character() %>% unique()) +
+  scale_fill_discrete("", labels = c("False Neg", "True Pos"))
 ```
 
 
