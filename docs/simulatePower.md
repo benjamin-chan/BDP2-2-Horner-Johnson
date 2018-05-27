@@ -1,61 +1,61 @@
 ---
 title: "Power simulations"
 author: "Benjamin Chan (chanb@ohsu.edu)"
-date: 2018-05-11
+date: 2018-05-26
 output: html_document
 ---
 
 
 
-## Generate data
+## Simulation parameters
 
 
 
-Study design is a two-factor, full factorial randomization.
-The factors are **framing** and the **message** of the intervention.
-Each factor has **3** levels.
+Full sample size is **N = 500**.
 
-Full sample size is **N = 600**.
-
-Number of simulations is **S = 1000**.
+Number of simulations is **S = 5000**.
 
 The outcomes are **comprehension** and **influence**.
 
 
-
-Comprehension is a dichotomous outcome.
-Baseline comprehension is assumed to be **50%**.
-
-Influence is a continuous outcome.
-It represents pre-post change on a scale.
-For analytic purposes, it will be scaled on a (-1, +1) continuum.
-Baseline influence is assumed to be **0.00**.
-
-![plot of chunk generateData](../figures/generateData-1.png)![plot of chunk generateData](../figures/generateData-2.png)
-
-|framing |message |    n| meanComprehension| nominalRiskRatio| nominalRiskDiff| meanInfluence| meanSD| meanCV| nominalEffectSize|
-|:-------|:-------|----:|-----------------:|----------------:|---------------:|-------------:|------:|------:|-----------------:|
-|A       |X       | 1000|             0.502|            1.000|           0.000|         0.000|  0.538| 49.494|              0.00|
-|A       |Y       | 1000|             0.646|            1.291|           0.146|         0.155|  0.528|  1.660|              0.54|
-|A       |Z       | 1000|             0.669|            1.336|           0.168|         0.178|  0.522|  2.556|              0.62|
-|B       |X       | 1000|             0.633|            1.268|           0.134|         0.144|  0.528|  5.231|              0.50|
-|B       |Y       | 1000|             0.760|            1.519|           0.260|         0.286|  0.498|  1.854|              1.04|
-|B       |Z       | 1000|             0.776|            1.555|           0.277|         0.306|  0.492|  1.698|              1.12|
-|C       |X       | 1000|             0.660|            1.314|           0.158|         0.163|  0.527|  4.012|              0.58|
-|C       |Y       | 1000|             0.779|            1.555|           0.278|         0.308|  0.492|  1.683|              1.12|
-|C       |Z       | 1000|             0.793|            1.588|           0.294|         0.325|  0.485|  1.570|              1.20|
-
-![plot of chunk generateData](../figures/generateData-3.png)![plot of chunk generateData](../figures/generateData-4.png)![plot of chunk generateData](../figures/generateData-5.png)
-
 ## Aim 1: Comprehension
 
 
-|term     | samples| truePos| power| sampleSize|
-|:--------|-------:|-------:|-----:|----------:|
-|framingB |    1000|     715| 0.715|        600|
-|framingC |    1000|     840| 0.840|        600|
-|messageY |    1000|     809| 0.809|        600|
-|messageZ |    1000|     891| 0.891|        600|
+
+Comprehension is a dichotomous outcome.
+With graphic **A**, comprehension is assumed to be **50%**.
+With graphic **B**, comprehension is assumed to be **59%**.
+
+All subjects will have comprehension assessed with graphics A and B.
+Order of presentation and message will be randomized.
+Assumed test is McNemar's chi-square for paired proportions.
+$H_0$ is there is no difference in the comprehension proportions between graphics A and B.
+
+
+```
+## # A tibble: 4 x 4
+## # Groups:   order, graphic [?]
+##   order graphic scenario      n
+##   <dbl> <fct>   <fct>     <int>
+## 1    1. A       a        625417
+## 2    1. A       b        624583
+## 3    1. B       a        624268
+## 4    1. B       b        625732
+```
+
+```
+## # A tibble: 2 x 4
+##   graphic       y       n     p
+##   <fct>     <int>   <int> <dbl>
+## 1 A       1250298 2500000 0.500
+## 2 B       1478504 2500000 0.591
+```
+
+
+
+| samples| truePos| power| sampleSize|
+|-------:|-------:|-----:|----------:|
+|    5000|    4045| 0.809|        500|
 
 ![plot of chunk comprehension](../figures/comprehension-1.png)
 
@@ -63,14 +63,36 @@ Baseline influence is assumed to be **0.00**.
 ## Aim 2: Influence
 
 
-|term     | samples| truePos| power|
-|:--------|-------:|-------:|-----:|
-|framingB |    1000|     736| 0.736|
-|framingC |    1000|     846| 0.846|
-|messageY |    1000|     816| 0.816|
-|messageZ |    1000|     900| 0.900|
+
+Influence is a continuous outcome.
+For analytic purposes, it will be scaled on a (-1, +1) continuum.
+With video **A**, influence is assumed to be **0.00**.
+With video **B**, influence is assumed to be **1%**.
+With video **C**, influence is assumed to be **1%**.
+With video **D**, influence is assumed to be **1%**.
+Standard deviation is assumed to be equal across video groups with value **1%**
+
+Since the metric is bounded by -1 and +1, a truncated normal distribution is simulated.
+The simulated means will be different that the specified nominal means above.
 
 ![plot of chunk influence](../figures/influence-1.png)
+
+|video |    n| meanInfluence| meanSD| meanZ| meanCV| nominalEffectSize|
+|:-----|----:|-------------:|------:|-----:|------:|-----------------:|
+|A     | 5000|         0.000|  0.539| 0.000| -0.252|              0.00|
+|B     | 5000|         0.186|  0.521| 0.359|  3.056|              0.65|
+|C     | 5000|         0.200|  0.519| 0.388|  2.787|              0.70|
+|D     | 5000|         0.212|  0.517| 0.413|  2.590|              0.75|
+
+![plot of chunk influence](../figures/influence-2.png)![plot of chunk influence](../figures/influence-3.png)![plot of chunk influence](../figures/influence-4.png)
+
+|term   | meanEstimate| sdEstimate| meanStatistic| samples| truePos|  power|
+|:------|------------:|----------:|-------------:|-------:|-------:|------:|
+|videoB |    0.1859241|  0.0675000|      2.806565|    5000|    3936| 0.7872|
+|videoC |    0.1997872|  0.0670145|      3.015587|    5000|    4216| 0.8432|
+|videoD |    0.2122143|  0.0662745|      3.203300|    5000|    4443| 0.8886|
+
+![plot of chunk influence](../figures/influence-5.png)
 
 
 ## Session summary
@@ -78,10 +100,10 @@ Baseline influence is assumed to be **0.00**.
 
 ```
 ## $completionDateTime
-## [1] "2018-05-11 14:53:24 PDT"
+## [1] "2018-05-26 19:07:30 PDT"
 ## 
 ## $executionTime
-## Time difference of 56.77568 secs
+## Time difference of 4.596046 mins
 ## 
 ## $sessionInfo
 ## R version 3.4.3 (2017-11-30)
@@ -110,11 +132,12 @@ Baseline influence is assumed to be **0.00**.
 ## loaded via a namespace (and not attached):
 ##  [1] Rcpp_0.12.16     highr_0.6        pillar_1.2.1     compiler_3.4.3  
 ##  [5] plyr_1.8.4       bindr_0.1.1      tools_3.4.3      digest_0.6.12   
-##  [9] evaluate_0.10.1  tibble_1.4.2     nlme_3.1-131     gtable_0.2.0    
+##  [9] evaluate_0.10.1  tibble_1.4.2     nlme_3.1-131.1   gtable_0.2.0    
 ## [13] lattice_0.20-35  pkgconfig_2.0.1  rlang_0.2.0      psych_1.8.3.3   
-## [17] stringr_1.2.0    rprojroot_1.2    grid_3.4.3       glue_1.2.0      
-## [21] R6_2.2.2         foreign_0.8-69   tidyr_0.8.0      purrr_0.2.4     
-## [25] reshape2_1.4.3   backports_1.1.1  scales_0.5.0     codetools_0.2-15
-## [29] htmltools_0.3.6  assertthat_0.2.0 mnormt_1.5-5     colorspace_1.3-2
-## [33] labeling_0.3     stringi_1.1.5    lazyeval_0.2.1   munsell_0.4.3
+## [17] cli_1.0.0        stringr_1.2.0    rprojroot_1.2    grid_3.4.3      
+## [21] glue_1.2.0       R6_2.2.2         foreign_0.8-69   tidyr_0.8.0     
+## [25] purrr_0.2.4      reshape2_1.4.3   backports_1.1.1  scales_0.5.0    
+## [29] codetools_0.2-15 htmltools_0.3.6  assertthat_0.2.0 mnormt_1.5-5    
+## [33] colorspace_1.3-2 labeling_0.3     utf8_1.1.3       stringi_1.1.5   
+## [37] lazyeval_0.2.1   munsell_0.4.3    crayon_1.3.4
 ```
