@@ -170,7 +170,7 @@ df %>%
   ggplot(aes(x = influence)) +
   geom_density(fill = "grey", alpha = 1/2) +
   scale_x_continuous("Influence, truncated normal random variable") +
-  facet_wrap(~ video)
+  facet_wrap(~ video, ncol = 1)
 dfSum <- 
   df %>% 
   group_by(sim, video) %>% 
@@ -178,12 +178,14 @@ dfSum <-
             eta = mean(eta),
             y = mean(influence),
             s = sd(influence),
+            z = mean(influence) / sd(influence),
             cv = sd(influence) / mean(influence))
 dfSum %>% 
   group_by(video) %>% 
   summarize(n = n(),
             meanInfluence = mean(y),
             meanSD = mean(s),
+            meanZ = mean(z),
             meanCV = mean(cv),
             nominalEffectSize = mean(eta)) %>% 
   kable(digits = 3)
@@ -191,12 +193,17 @@ dfSum %>%
   ggplot(aes(x = y)) +
   geom_density(fill = "grey", alpha = 1/2) +
   scale_x_continuous("Mean influence") +
-  facet_wrap(~ video)
+  facet_wrap(~ video, ncol = 1)
 dfSum %>% 
   ggplot(aes(x = s)) +
   geom_density(fill = "grey", alpha = 1/2) +
   scale_x_continuous("SD influence") +
-  facet_wrap(~ video)
+  facet_wrap(~ video, ncol = 1)
+dfSum %>% 
+  ggplot(aes(x = z)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Mean influence in SD units") +
+  facet_wrap(~ video, ncol = 1)
 
 cores <- min(4, detectCores() - 1)
 cl <- makeCluster(cores)
@@ -216,7 +223,10 @@ stopCluster(cl)
 tests %>% 
   filter(term != "(Intercept)") %>% 
   group_by(term) %>% 
-  summarize(samples = n(),
+  summarize(meanEstimate = mean(estimate),
+            sdEstimate = sd(estimate),
+            meanStatistic = mean(statistic),
+            samples = n(),
             truePos = sum(sig)) %>% 
   mutate(power = truePos / samples) %>% 
   kable()
