@@ -45,14 +45,22 @@ The outcomes are **comprehension** and **influence**.
 ## Aim 1: Comprehension
 
 ```{r}
-comprehension0 <- 0.5
-effectSize <- 0.37
+size <- 5
+pA <- 0.5
+comprehension0 <- size * pA
+effectSize <- 0.16
+pB <- exp(effectSize) / (1 + exp(effectSize))
+varA <- size * pA * (1 - pA)
+varB <- size * pB * (1 - pB)
 alpha <- 0.05
+cohenD <- size * (pB - pA) / sqrt((varA + varB) / 2)
 ```
 
-Comprehension is a dichotomous outcome.
-With graphic **A**, comprehension is assumed to be **`r sprintf("%.00f%%", comprehension0 * 100)`**.
-With graphic **B**, comprehension is assumed to be **`r sprintf("%.00f%%", (exp(effectSize) / (1 + exp(effectSize))) * 100)`**.
+Comprehension is a binomial outcome.
+Integer values range from [0, 5].
+With graphic **A**, comprehension is assumed to be **`r sprintf("%.02f", pA * size)`**.
+With graphic **B**, comprehension is assumed to be **`r sprintf("%.02f", pB * size)`**.
+Cohen's *d* = **`r sprintf("%.02f", cohenD)`**
 
 All subjects will have comprehension assessed with graphics A and B.
 Order of presentation and message will be randomized.
@@ -73,23 +81,28 @@ df <-
   bind_cols(data.frame(order)) %>% 
   bind_cols(data.frame(scenario)) %>% 
   mutate(scenario = factor(scenario, labels = c("a", "b"))) %>% 
-  mutate(eta = 
-           log(comprehension0 / (1 - comprehension0)) + 
-           as.integer(graphic == "A") * 0.0  + 
-           as.integer(graphic == "B") * effectSize) %>% 
-  mutate(comprehension = rbinom(nrow(.), 1, exp(eta) / (1 + exp(eta)))) %>% 
+  mutate(p = 
+           as.integer(graphic == "A") * pA  + 
+           as.integer(graphic == "B") * pB) %>% 
+  mutate(comprehension = rbinom(nrow(.), size, p)) %>% 
   arrange(sim, subject, order) %>% 
   select(sim, subject, order, graphic, scenario, comprehension)
-rm(comprehension0, order, scenario)
+rm(order, scenario)
 df %>% 
   filter(order == 1) %>% 
   group_by(order, graphic, scenario) %>% 
   summarize(n = n())
 df %>% 
   group_by(graphic) %>% 
-  summarize(y = sum(comprehension),
-            n = n(),
-            p = sum(comprehension) / n())
+  summarize(n = n(),
+            mean = mean(comprehension),
+            sd = sd(comprehension))
+df %>%
+  ggplot(aes(x = comprehension, fill = graphic)) +
+  geom_histogram(alpha = 1/2) +
+  scale_x_continuous("Number correct") +
+  scale_fill_discrete("Graphic") +
+  facet_wrap(~ graphic, ncol = 1)
 
 cores <- min(4, detectCores() - 1)
 cl <- makeCluster(cores)
@@ -102,8 +115,9 @@ tests <- foreach (i = seq(S), .combine = rbind) %dopar% {
     df %>% 
     filter(sim == i) %>% 
     select(subject, graphic, comprehension) %>% 
-    spread(graphic, comprehension)
-  test <- mcnemar.test(dfi$A, dfi$B)
+    spread(graphic, comprehension) %>%
+    mutate(diff = B - A)
+  test <- t.test(dfi %>% pull(diff))
   data.frame(method = test$method,
              chisq = test$statistic,
              df = test$parameter,
