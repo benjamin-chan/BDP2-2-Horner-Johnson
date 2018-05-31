@@ -32,7 +32,7 @@ Sys.time0 <- Sys.time()
 
 ```{r}
 N <- 500
-S <- 5000
+S <- 1000
 set.seed(as.integer(as.Date("2018-05-11")))
 ```
 
@@ -49,7 +49,7 @@ The outcomes are **comprehension** and **influence**.
 size <- 5
 pA <- 0.5
 comprehension0 <- size * pA
-effectSize <- 0.16
+effectSize <- 0.165
 pB <- exp(effectSize) / (1 + exp(effectSize))
 varA <- size * pA * (1 - pA)
 varB <- size * pB * (1 - pB)
@@ -147,7 +147,7 @@ tests %>%
 influence0 <- 0
 sd0 <- 1.0
 effectSizeB <- 0.50
-effectSizeC <- 0.66
+effectSizeC <- 0.675
 effectSizeD <- 0.75
 alpha <- 0.05
 ```
@@ -209,16 +209,6 @@ dfSum %>%
   ggplot(aes(x = y)) +
   geom_density(fill = "grey", alpha = 1/2) +
   scale_x_continuous("Mean influence") +
-  facet_wrap(~ video, ncol = 1)
-dfSum %>% 
-  ggplot(aes(x = s)) +
-  geom_density(fill = "grey", alpha = 1/2) +
-  scale_x_continuous("SD influence") +
-  facet_wrap(~ video, ncol = 1)
-dfSum %>% 
-  ggplot(aes(x = z)) +
-  geom_density(fill = "grey", alpha = 1/2) +
-  scale_x_continuous("Mean influence in SD units") +
   facet_wrap(~ video, ncol = 1)
 cohenD <- 
   inner_join(dfSum %>% 
