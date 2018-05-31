@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = FALSE,
                       fig.path = "../figures/", 
                       dpi = 300)
 library(magrittr)
+library(tidyr)
 library(dplyr)
 library(broom)
 library(parallel)
@@ -145,8 +146,8 @@ tests %>%
 ```{r}
 influence0 <- 0
 sd0 <- 1.0
-effectSizeB <- 0.65
-effectSizeC <- 0.7
+effectSizeB <- 0.50
+effectSizeC <- 0.66
 effectSizeD <- 0.75
 alpha <- 0.05
 ```
@@ -192,6 +193,7 @@ dfSum <-
             eta = mean(eta),
             y = mean(influence),
             s = sd(influence),
+            v = sd(influence) ^ 2,
             z = mean(influence) / sd(influence),
             cv = sd(influence) / mean(influence))
 dfSum %>% 
@@ -218,6 +220,42 @@ dfSum %>%
   geom_density(fill = "grey", alpha = 1/2) +
   scale_x_continuous("Mean influence in SD units") +
   facet_wrap(~ video, ncol = 1)
+cohenD <- 
+  inner_join(dfSum %>% 
+               select(sim, video, y) %>% 
+               spread(video, y) %>% 
+               mutate(meanDiff_BA = B - A, 
+                      meanDiff_CA = C - A, 
+                      meanDiff_DA = D - A) %>%
+               select(-c(A, B, C, D)),
+             dfSum %>% 
+               select(sim, video, v) %>% 
+               spread(video, v) %>% 
+               mutate(pooledSD_BA = sqrt((B + A) / 2), 
+                      pooledSD_CA = sqrt((C + A) / 2), 
+                      pooledSD_DA = sqrt((D + A) / 2)) %>%
+               select(-c(A, B, C, D)),
+              by = "sim") %>%
+  mutate(cohenD_BA = meanDiff_BA / pooledSD_BA,
+         cohenD_CA = meanDiff_CA / pooledSD_CA,
+         cohenD_DA = meanDiff_DA / pooledSD_DA) %>% 
+  ungroup() %>% 
+  select(cohenD_BA, cohenD_CA, cohenD_DA) %>% 
+  gather() %>% 
+  mutate(comparison = gsub("cohenD_", "", key)) %>% 
+  mutate(comparison = sprintf("%s vs %s", substr(comparison, 1, 1), substr(comparison, 2, 2))) %>% 
+  select(-key) %>% 
+  rename(cohenD = value)
+cohenD %>% 
+  group_by(comparison) %>%
+  summarize(meanCohenD = mean(cohenD),
+            sdCohenD = sd(cohenD)) %>% 
+  kable()
+cohenD %>% 
+  ggplot(aes(x = cohenD)) +
+  geom_density(fill = "grey", alpha = 1/2) +
+  scale_x_continuous("Cohen's D") +
+  facet_wrap(~ comparison, ncol = 1)
 
 cores <- min(4, detectCores() - 1)
 cl <- makeCluster(cores)
