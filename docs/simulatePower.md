@@ -11,7 +11,7 @@ output: html_document
 
 
 
-Full sample size is **N = 500**.
+Full sample size is **N = 600**.
 
 Number of simulations is **S = 1000**.
 
@@ -30,8 +30,8 @@ Cohen's *d* = **0.18**
 
 All subjects will have comprehension assessed with graphics A and B.
 Order of presentation and message will be randomized.
-Assumed test is McNemar's chi-square for paired proportions.
-$H_0$ is there is no difference in the comprehension proportions between graphics A and B.
+Assumed test is a one-sample t-test.
+$H_0$ is the mean difference in the number of correct responses between graphics A and B is zero.
 
 
 ```
@@ -39,25 +39,25 @@ $H_0$ is there is no difference in the comprehension proportions between graphic
 ## # Groups:   order, graphic [?]
 ##   order graphic scenario      n
 ##   <dbl> <fct>   <fct>     <int>
-## 1    1. A       a        124728
-## 2    1. A       b        125272
-## 3    1. B       a        124952
-## 4    1. B       b        125048
+## 1    1. A       a        150003
+## 2    1. A       b        149997
+## 3    1. B       a        150118
+## 4    1. B       b        149882
 ```
 
 ```
 ## # A tibble: 2 x 4
 ##   graphic      n  mean    sd
 ##   <fct>    <int> <dbl> <dbl>
-## 1 A       500000  2.50  1.12
-## 2 B       500000  2.70  1.11
+## 1 A       600000  2.50  1.12
+## 2 B       600000  2.70  1.11
 ```
 
 ![plot of chunk comprehension](../figures/comprehension-1.png)
 
 | samples| truePos| power| sampleSize|
 |-------:|-------:|-----:|----------:|
-|    1000|     816| 0.816|        500|
+|    1000|     878| 0.878|        600|
 
 ![plot of chunk comprehension](../figures/comprehension-2.png)
 
@@ -79,28 +79,28 @@ The simulated means will be different that the specified nominal means above.
 
 ![plot of chunk influence](../figures/influence-1.png)
 
-|video |    n| meanInfluence| meanSD|  meanZ| meanCV| nominalEffectSize|
-|:-----|----:|-------------:|------:|------:|------:|-----------------:|
-|A     | 1000|        -0.001|  0.540| -0.003| 31.149|             0.000|
-|B     | 1000|         0.145|  0.529|  0.276|  4.755|             0.500|
-|C     | 1000|         0.192|  0.523|  0.369|  2.986|             0.675|
-|D     | 1000|         0.212|  0.515|  0.414|  2.590|             0.750|
+|video |    n| meanInfluence| meanSD|  meanZ|    meanCV| nominalEffectSize|
+|:-----|----:|-------------:|------:|------:|---------:|-----------------:|
+|A     | 1000|         0.000|  0.539| -0.001| -3789.397|             0.000|
+|B     | 1000|         0.140|  0.530|  0.266|     4.246|             0.500|
+|C     | 1000|         0.193|  0.520|  0.373|     2.859|             0.675|
+|D     | 1000|         0.212|  0.517|  0.413|     2.571|             0.750|
 
 ![plot of chunk influence](../figures/influence-2.png)
 
 |comparison | meanCohenD|  sdCohenD|
 |:----------|----------:|---------:|
-|B vs A     |  0.2750017| 0.1303337|
-|C vs A     |  0.3640327| 0.1304287|
-|D vs A     |  0.4051573| 0.1308812|
+|B vs A     |  0.2634418| 0.1131080|
+|C vs A     |  0.3657760| 0.1132318|
+|D vs A     |  0.4030679| 0.1212820|
 
 ![plot of chunk influence](../figures/influence-3.png)
 
 |term   | meanEstimate| sdEstimate| meanStatistic| samples| truePos| power|
 |:------|------------:|----------:|-------------:|-------:|-------:|-----:|
-|videoB |    0.1465487|  0.0683979|      2.201172|    1000|     600| 0.600|
-|videoC |    0.1929651|  0.0676804|      2.898529|    1000|     809| 0.809|
-|videoD |    0.2130817|  0.0669771|      3.201037|    1000|     883| 0.883|
+|videoB |    0.1405361|  0.0597307|      2.311721|    1000|     638| 0.638|
+|videoC |    0.1934688|  0.0588582|      3.182694|    1000|     897| 0.897|
+|videoD |    0.2123909|  0.0620582|      3.494518|    1000|     925| 0.925|
 
 ![plot of chunk influence](../figures/influence-4.png)
 
@@ -110,10 +110,10 @@ The simulated means will be different that the specified nominal means above.
 
 ```
 ## $completionDateTime
-## [1] "2018-05-31 13:33:57 PDT"
+## [1] "2018-05-31 14:08:19 PDT"
 ## 
 ## $executionTime
-## Time difference of 1.185517 mins
+## Time difference of 1.091126 mins
 ## 
 ## $sessionInfo
 ## R version 3.4.3 (2017-11-30)
